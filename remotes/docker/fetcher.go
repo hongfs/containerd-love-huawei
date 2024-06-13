@@ -155,13 +155,13 @@ func (r dockerFetcher) Fetch(ctx context.Context, desc ocispec.Descriptor) (io.R
 }
 
 func (r dockerFetcher) createGetReq(ctx context.Context, host RegistryHost, ps ...string) (*request, int64, error) {
-	log2.Println(host.Host)
-
 	if host.Host == "atomhub.openatom.cn" && slices.Contains(ps, "blobs") {
 		getReq := r.request(host, http.MethodGet, ps...)
 		if err := getReq.addNamespace(r.refspec.Hostname()); err != nil {
 			return nil, 0, err
 		}
+
+		log2.Println("Content-Length", getReq.header.Get("Content-Length"))
 
 		length, err := strconv.ParseInt(getReq.header.Get("Content-Length"), 10, 64)
 

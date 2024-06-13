@@ -162,6 +162,8 @@ func (r dockerFetcher) createGetReq(ctx context.Context, host RegistryHost, ps .
 
 		u := getReq.host.Scheme + "://" + getReq.host.Host + getReq.path
 
+		auth := NewDockerAuthorizer()
+
 		req, err := http.NewRequestWithContext(ctx, getReq.method, u, nil)
 
 		if err != nil {
@@ -171,7 +173,7 @@ func (r dockerFetcher) createGetReq(ctx context.Context, host RegistryHost, ps .
 		req.Header = getReq.header
 		req.Header.Set("Range", "bytes=0-1")
 
-		if err := host.Authorizer.Authorize(ctx, req); err != nil {
+		if err := auth.Authorize(ctx, req); err != nil {
 			return nil, 0, fmt.Errorf("failed to authorize: %w", err)
 		}
 

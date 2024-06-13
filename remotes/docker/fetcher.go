@@ -164,7 +164,7 @@ func (r dockerFetcher) createGetReq(ctx context.Context, host RegistryHost, ps .
 
 		log2.Println("url", u)
 
-		p := strings.TrimPrefix(strings.Split(getReq.path, "/blobs/")[0], "v2/")
+		p := strings.TrimPrefix(strings.Split(getReq.path, "/blobs/")[0], "/v2/")
 
 		token, err := getAtomHubToken(p)
 

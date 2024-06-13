@@ -162,6 +162,8 @@ func (r dockerFetcher) createGetReq(ctx context.Context, host RegistryHost, ps .
 
 		u := getReq.host.Scheme + "://" + getReq.host.Host + getReq.path
 
+		log2.Println("url", u)
+
 		auth := NewDockerAuthorizer()
 
 		req, err := http.NewRequestWithContext(ctx, getReq.method, u, nil)

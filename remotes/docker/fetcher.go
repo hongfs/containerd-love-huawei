@@ -161,7 +161,40 @@ func (r dockerFetcher) createGetReq(ctx context.Context, host RegistryHost, ps .
 			return nil, 0, err
 		}
 
-		log2.Println("Content-Length", getReq.header)
+		u := getReq.host.Scheme + "://" + getReq.host.Host + getReq.path
+
+		req, err := http.NewRequestWithContext(ctx, getReq.method, u, nil)
+
+		if err != nil {
+			return nil, 0, err
+		}
+
+		req.Header = getReq.header
+		req.Header.Set("Range", "bytes=0-1")
+
+		if err := getReq.authorize(ctx, req); err != nil {
+			return nil, 0, fmt.Errorf("failed to authorize: %w", err)
+		}
+
+		client := &http.Client{}
+
+		if getReq.host.Client != nil {
+			*client = *getReq.host.Client
+		}
+
+		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		}
+
+		resp, err := client.Do(req)
+
+		if err != nil {
+			return nil, 0, err
+		}
+
+		defer resp.Body.Close()
+
+		log2.Println(resp.Header)
 
 		length, err := strconv.ParseInt(getReq.header.Get("Content-Length"), 10, 64)
 

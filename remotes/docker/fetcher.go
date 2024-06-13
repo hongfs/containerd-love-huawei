@@ -162,6 +162,8 @@ func (r dockerFetcher) createGetReq(ctx context.Context, host RegistryHost, ps .
 
 		u := getReq.host.Scheme + "://" + getReq.host.Host + getReq.path
 
+		log2.Println("url", u)
+
 		p := strings.TrimPrefix(strings.Split(getReq.path, "/blobs/")[0], "v2/")
 
 		token, err := getAtomHubToken(p)
@@ -233,6 +235,8 @@ func (r dockerFetcher) createGetReq(ctx context.Context, host RegistryHost, ps .
 }
 
 func getAtomHubToken(value string) (string, error) {
+	log2.Println("getAtomHubToken", value)
+
 	u := fmt.Sprintf("https://atomhub.openatom.cn/service/token?scope=repository:%s:pull&service=harbor-registry", value)
 
 	resp, err := http.Get(u)

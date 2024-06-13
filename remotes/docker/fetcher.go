@@ -26,7 +26,6 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/containerd/containerd/images"
@@ -176,14 +175,10 @@ func (r dockerFetcher) createGetReq(ctx context.Context, host RegistryHost, ps .
 			return nil, 0, fmt.Errorf("failed to authorize: %w", err)
 		}
 
-		client := &http.Client{}
-
-		if getReq.host.Client != nil {
-			*client = *getReq.host.Client
-		}
-
-		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
+		client := &http.Client{
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
 		}
 
 		resp, err := client.Do(req)
@@ -196,13 +191,7 @@ func (r dockerFetcher) createGetReq(ctx context.Context, host RegistryHost, ps .
 
 		log2.Println(resp.Header)
 
-		length, err := strconv.ParseInt(getReq.header.Get("Content-Length"), 10, 64)
-
-		if err != nil {
-			return nil, 0, err
-		}
-
-		return getReq, length, nil
+		return getReq, resp.ContentLength, nil
 	}
 
 	headReq := r.request(host, http.MethodHead, ps...)

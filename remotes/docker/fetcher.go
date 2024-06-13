@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/containerd/containerd/images"
@@ -179,14 +180,7 @@ func (r dockerFetcher) createGetReq(ctx context.Context, host RegistryHost, ps .
 		}
 
 		req.Header = getReq.header
-		req.Header.Set("Range", "bytes=0-1")
 		req.Header.Set("Authorization", "Bearer "+token)
-
-		log2.Println("getReq")
-		log2.Println(getReq.header)
-
-		log2.Println("req")
-		log2.Println(req.Header)
 
 		client := &http.Client{
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -205,7 +199,18 @@ func (r dockerFetcher) createGetReq(ctx context.Context, host RegistryHost, ps .
 		log2.Println("resp")
 		log2.Println(resp.Header)
 
-		return getReq, resp.ContentLength, nil
+		blobLen, err := getAtomHubBlobsLen(resp.Header.Get("Location"))
+
+		if err != nil {
+			return nil, 0, err
+		}
+
+		getReq = r.request(host, http.MethodGet, ps...)
+		if err := getReq.addNamespace(r.refspec.Hostname()); err != nil {
+			return nil, 0, err
+		}
+
+		return getReq, blobLen, nil
 	}
 
 	headReq := r.request(host, http.MethodHead, ps...)
@@ -232,6 +237,38 @@ func (r dockerFetcher) createGetReq(ctx context.Context, host RegistryHost, ps .
 		return nil, 0, err
 	}
 	return getReq, headResp.ContentLength, nil
+}
+
+func getAtomHubBlobsLen(uri string) (int64, error) {
+	req, err := http.NewRequest(http.MethodGet, uri, nil)
+
+	if err != nil {
+		return 0, err
+	}
+
+	req.Header.Set("Range", "bytes=0-1")
+
+	res, err := http.DefaultClient.Do(req)
+
+	if err != nil {
+		return 0, err
+	}
+
+	defer res.Body.Close()
+
+	rangeStr := res.Header.Get("Content-Range")
+
+	if rangeStr == "" {
+		return 0, fmt.Errorf("no content range")
+	}
+
+	if !strings.Contains(rangeStr, "/") {
+		return 0, fmt.Errorf("no content range")
+	}
+
+	rangeStr = strings.Split(rangeStr, "/")[1]
+
+	return strconv.ParseInt(rangeStr, 10, 64)
 }
 
 func getAtomHubToken(value string) (string, error) {

@@ -162,9 +162,13 @@ func (r dockerFetcher) createGetReq(ctx context.Context, host RegistryHost, ps .
 
 		u := getReq.host.Scheme + "://" + getReq.host.Host + getReq.path
 
-		log2.Println("url", u)
+		p := strings.TrimPrefix(strings.Split(getReq.path, "/blobs/")[0], "v2/")
 
-		auth := NewDockerAuthorizer()
+		token, err := getAtomHubToken(p)
+
+		if err != nil {
+			return nil, 0, err
+		}
 
 		req, err := http.NewRequestWithContext(ctx, getReq.method, u, nil)
 
@@ -174,10 +178,7 @@ func (r dockerFetcher) createGetReq(ctx context.Context, host RegistryHost, ps .
 
 		req.Header = getReq.header
 		req.Header.Set("Range", "bytes=0-1")
-
-		if err := auth.Authorize(ctx, req); err != nil {
-			return nil, 0, fmt.Errorf("failed to authorize: %w", err)
-		}
+		req.Header.Set("Authorization", "Bearer "+token)
 
 		log2.Println("getReq")
 		log2.Println(getReq.header)
@@ -229,6 +230,40 @@ func (r dockerFetcher) createGetReq(ctx context.Context, host RegistryHost, ps .
 		return nil, 0, err
 	}
 	return getReq, headResp.ContentLength, nil
+}
+
+func getAtomHubToken(value string) (string, error) {
+	u := fmt.Sprintf("https://atomhub.openatom.cn/service/token?scope=repository:%s:pull&service=harbor-registry", value)
+
+	resp, err := http.Get(u)
+
+	if err != nil {
+		return "", err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("unexpected status code %v: %s", resp.StatusCode, resp.Status)
+	}
+
+	type Request struct {
+		Token string `json:"token"`
+	}
+
+	var result Request
+
+	err = json.NewDecoder(resp.Body).Decode(&result)
+
+	if err != nil {
+		return "", err
+	}
+
+	if result.Token == "" {
+		return "", fmt.Errorf("no token found")
+	}
+
+	return result.Token, nil
 }
 
 func (r dockerFetcher) FetchByDigest(ctx context.Context, dgst digest.Digest) (io.ReadCloser, ocispec.Descriptor, error) {

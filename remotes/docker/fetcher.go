@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	log2 "log"
 	"net/http"
 	"net/url"
 	"slices"
@@ -154,6 +155,8 @@ func (r dockerFetcher) Fetch(ctx context.Context, desc ocispec.Descriptor) (io.R
 }
 
 func (r dockerFetcher) createGetReq(ctx context.Context, host RegistryHost, ps ...string) (*request, int64, error) {
+	log2.Println(host.Host)
+
 	if host.Host == "atomhub.openatom.cn" && slices.Contains(ps, "blobs") {
 		getReq := r.request(host, http.MethodGet, ps...)
 		if err := getReq.addNamespace(r.refspec.Hostname()); err != nil {
@@ -193,14 +196,6 @@ func (r dockerFetcher) createGetReq(ctx context.Context, host RegistryHost, ps .
 		return nil, 0, err
 	}
 	return getReq, headResp.ContentLength, nil
-}
-
-func hasAtomHubBlobs(host RegistryHost, ps []string) bool {
-	if !slices.Contains(ps, "blobs") {
-		return false
-	}
-
-	return host.Host == "atomhub.openatom.cn"
 }
 
 func (r dockerFetcher) FetchByDigest(ctx context.Context, dgst digest.Digest) (io.ReadCloser, ocispec.Descriptor, error) {

@@ -175,6 +175,12 @@ func (r dockerFetcher) createGetReq(ctx context.Context, host RegistryHost, ps .
 			return nil, 0, fmt.Errorf("failed to authorize: %w", err)
 		}
 
+		log2.Println("getReq")
+		log2.Println(getReq.header)
+
+		log2.Println("req")
+		log2.Println(req.Header)
+
 		client := &http.Client{
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				return http.ErrUseLastResponse
@@ -189,6 +195,7 @@ func (r dockerFetcher) createGetReq(ctx context.Context, host RegistryHost, ps .
 
 		defer resp.Body.Close()
 
+		log2.Println("resp")
 		log2.Println(resp.Header)
 
 		return getReq, resp.ContentLength, nil

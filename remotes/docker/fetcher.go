@@ -161,7 +161,7 @@ func (r dockerFetcher) createGetReq(ctx context.Context, host RegistryHost, ps .
 			return nil, 0, err
 		}
 
-		log2.Println("Content-Length", getReq.header.Get("Content-Length"))
+		log2.Println("Content-Length", getReq.header)
 
 		length, err := strconv.ParseInt(getReq.header.Get("Content-Length"), 10, 64)
 

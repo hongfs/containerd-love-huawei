@@ -256,6 +256,8 @@ func getAtomHubBlobsLen(uri string) (int64, error) {
 
 	defer res.Body.Close()
 
+	log2.Println("getAtomHubBlobsLen", res.Header)
+
 	rangeStr := res.Header.Get("Content-Range")
 
 	if rangeStr == "" {

@@ -187,7 +187,7 @@ func (r dockerFetcher) createGetReq(ctx context.Context, host RegistryHost, ps .
 		headResp.Body.Close()
 	}
 
-	if headResp.StatusCode > 299 && !hasAtomHubBlobs(host, ps) {
+	if headResp.StatusCode > 299 {
 		return nil, 0, fmt.Errorf("unexpected HEAD status code %v: %s", headReq.String(), headResp.Status)
 	}
 

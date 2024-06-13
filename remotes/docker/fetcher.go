@@ -28,6 +28,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/containerd/containerd/images"
 	"github.com/containerd/errdefs"
@@ -286,8 +287,14 @@ func getAtomHubToken(value string) (string, error) {
 
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusBadGateway {
+		time.Sleep(time.Second * 1)
+
+		return getAtomHubToken(value)
+	}
+
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("unexpected status code %v: %s", resp.StatusCode, resp.Status)
+		return "", fmt.Errorf("getAtomHubToken: unexpected status code %v: %s", resp.StatusCode, resp.Status)
 	}
 
 	type Request struct {
